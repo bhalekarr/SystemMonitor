@@ -35,10 +35,10 @@ Single click deployement or setup file with Application files folder and SystemM
 Configure appsettings.json:
 Update appsettings.json in the project root to set the monitoring interval and API endpoint:{
   "Monitoring": {
-    "IntervalSeconds": 5
+    "IntervalSeconds": 10
   },
   "ApiIntegration": {
-    "Endpoint": "https://api.example.com/system-metrics"
+    "Endpoint": "https://your-api-endpoint.com/metrics"
   }
 }
 
