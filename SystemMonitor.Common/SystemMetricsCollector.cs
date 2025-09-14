@@ -17,6 +17,24 @@ namespace SystemMonitor.Common
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // Windows API structure for memory status
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX lpBuffer);
+
         public async Task<SystemMetrics> CollectMetricsAsync(CancellationToken cancellationToken)
         {
             return await Task.Run(() => {
@@ -61,13 +79,20 @@ namespace SystemMonitor.Common
             {
                 try
                 {
-                    using var ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-                    float available = ramCounter.NextValue();
-                    using var totalCounter = new PerformanceCounter("Memory", "Committed Bytes");
-                    float committed = totalCounter.NextValue() / (1024.0f * 1024.0f); // Convert to MB
-                    long total = (long)(available + committed); // Estimate total as available + committed
-                    long used = (long)committed;
-                    return (used, total);
+                    MEMORYSTATUSEX memStatus = new MEMORYSTATUSEX();
+                    memStatus.dwLength = (uint)Marshal.SizeOf(memStatus);
+                    if (GlobalMemoryStatusEx(ref memStatus))
+                    {
+                        long total = (long)(memStatus.ullTotalPhys / (1024 * 1024)); // in MB
+                        long available = (long)(memStatus.ullAvailPhys / (1024 * 1024)); // in MB
+                        long used = total - available;
+                        return (used, total);
+                    }
+                    else
+                    {
+                        _logger.LogError($"Error calling GlobalMemoryStatusEx: {Marshal.GetLastWin32Error()}");
+                        return (0, 0);
+                    }
                 }
                 catch (Exception ex)
                 {
