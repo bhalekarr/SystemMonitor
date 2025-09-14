@@ -60,7 +60,9 @@ Design Decisions and Challenges:
 
 The application uses a clean architecture with dependency injection (via Microsoft.Extensions.DependencyInjection) to ensure modularity and testability. All components, including the monitoring service, metrics collector, and plugins, are consolidated into the SystemMonitor.Common project to simplify the structure while maintaining extensibility. The plugin system is implemented via the IMonitorPlugin interface, with sample plugins for file logging and API integration (ApiIntegrationPlugin). 
 
-Challenges: Mostly output of the json file while creating exe.
+Challenges: 
+Mostly output of the json file while creating exe.
+Change Performance Counter to GlobalMemoryStatusEx from kernel32.dll library. Used ullTotalPhys (total physical memory) and ullAvailPhys (available physical memory) to calculate accurate memory metrics.
 
 Cross-Platform Metric Collection: Windows-specific metrics use PerformanceCounter, with placeholders for Linux/macOS. Implementing Linux/macOS support (e.g., via /proc/stat for CPU) requires additional platform-specific code.
 Dependency Management: Consolidating projects required careful handling of namespaces and dependencies to avoid conflicts.
